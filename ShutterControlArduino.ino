@@ -1,51 +1,13 @@
 #include <Arduino.h>
 #include <LiquidCrystal.h>
 #include "ShutterControlArduino.h"
+#include "Morse/Morse.h"
 
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
-byte ledState = LOW;
-byte oldButtonState = LOW;
-
 int loopCnt = 0;
 
-void dit(byte d) {
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(DIT);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(d * DIT);
-}
-
-void dah(byte d) {
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(3 * DIT);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(d * DIT);
-}
-
-void morseError(char code) {
-    for (;;) {
-        switch (code) {
-            case 'I': {
-                dit(1);
-                dit(7);
-            }
-                break;
-            default: {
-                // SOS
-                dit(1);
-                dit(1);
-                dit(3);
-                dah(1);
-                dah(1);
-                dah(3);
-                dit(1);
-                dit(1);
-                dit(7);
-            }
-        }
-    }
-}
+void initEG();
 
 void debounce(Input *button, byte val) {
     if (val == HIGH) {
@@ -104,7 +66,7 @@ void updateMappings(unsigned long now) {
                 byte numOutputs = mapping->numOutputs;
                 for (byte k = 0; k < numOutputs; k++) {
                     Output *output = outputs[k];
-//                    output->
+                    output->status = mapping->statusToActivate;
                 }
             }
         } else {
@@ -117,7 +79,7 @@ void updateMappings(unsigned long now) {
         config.mappings[0].outputs[0]->status = OFF;
         } else if (config.mappings[0].outputs[0]->status == OFF) {
         ledState = !ledState;
-        config.mappings[0].outputs[0]->status = PIN_1;
+        config.mappings[0].outputs[0]->status = OUT1;
         digitalWrite(config.mappings[0].outputs[0]->pin1, ledState);
     }*/
 }
@@ -131,64 +93,50 @@ void printInfos(unsigned long now) {
         lcd.setCursor(0, 1);
         lcd.print(F("                "));
         lcd.setCursor(0, 1);
-        for (byte i = 8; i < 10; i++) {
-            Input *button = &config.inputs[i];
-            lcd.print(button->pin);
-            lcd.print(':');
-            lcd.print(button->activeDurationMs);
-            lcd.print(' ');
-        }
+        Input *button = &config.inputs[1];
+        lcd.print(button->pin);
+        lcd.print(':');
+        lcd.print(button->activeDurationMs);
+        lcd.print(' ');
     }
 }
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
 
-    byte i, j, k;
-    for (i = 0; i < NUM_INPUTS; i++) {
-        Input *button = &config.inputs[i];
-        button->pin = A0 + i;
-        pinMode(button->pin, INPUT_PULLUP);
-    }
-
-    for (i = 0; i < NUM_OUTPUTS; i++) {
-        Output *output = &config.outputs[i];
-        output->pin1 = DEFAULT_OUT_PIN0 + i * 2;
-        output->pin2 = output->pin1 + 1;
-        pinMode(output->pin1, OUTPUT);
-        pinMode(output->pin2, OUTPUT);
-        output->maxActivationDurationMs = DEFAULT_OUT_MAX_DURATION;
-    }
-
-    i = 0;
-    j = 0;
-    k = 0;
-    do {
-        InputToOutputMapping *mapping = &config.mappings[i];
-        mapping->inputs = static_cast<Input **>(malloc(sizeof(Input *)));
-        if (mapping->inputs == NULL) {
-            morseError('I');
-        }
-        mapping->inputs[0] = &config.inputs[j];
-        mapping->numInputs = 1;
-        mapping->outputs = static_cast<Output **>(malloc(sizeof(Output *)));
-        if (mapping->outputs == NULL) {
-            morseError('O');
-        }
-        mapping->outputs[0] = &config.outputs[k];
-        mapping->numOutputs = 1;
-
-        mapping->statusToActivate = i % 2 == 0 ? PIN_1 : PIN_2;
-        mapping->activationThresholdMs = DEFAULT_MAP_ACTIV_THRS;
-
-        k += i % 2;
-        i++;
-        j++;
-    } while (i < NUM_MAPPINGS && j < NUM_INPUTS && k < NUM_OUTPUTS);
+#if FLOOR_EG == 1 && FLOOR_OG == 0
+    initEG();
+#elif FLOOR_EG == 0 && FLOOR_OG == 1
+    initOG();
+#else
+#error "set floor"
+#endif
 
     lcd.begin(16, 2);
     lcd.print(NUM_INPUTS);
     lcd.print(F(" Buttons"));
+}
+
+void initEG() {
+    /*0*/ mapping(0).zu(23, 22).auf(25, 24).end(); // Bad EG
+    /*1*/ mapping(1).zu(27, 26).auf(29, 28).end(); // Schlafz. EG
+    /*2*/ mapping(2).zu(31, 30).auf(33, 32).end(); // WZ Tür EG
+    /*3*/ mapping(3).zu(35, 34).auf(37, 36).end(); // WZ Fenster EG
+    /*4*/ mapping(4).zu(39, 38).auf(41, 40).end(); // Küche Tür EG
+    /*5*/ mapping(5).zu(43, 42).auf(45, 44).end(); // Küche Fenster EG
+    /*6*/ mapping(6).zu(47, 46).auf(49, 48).end(); // Gäste WC EG
+    /*7*/ mapping(7).zu(51, 50).auf(53, 52).end(); // HWR EG
+}
+
+void initOG() {
+    /*0*/ mapping(0).zu(23, 22).auf(25, 24).end(); // Reserve OG
+    /*1*/ mapping(1).zu(27, 26).auf(29, 28).end(); // Flur OG
+    /*2*/ mapping(2).zu(31, 30).auf(33, 32).end(); // Finn
+    /*3*/ mapping(3).zu(35, 34).auf(37, 36).end(); // Lenn
+    /*4*/ mapping(4).zu(39, 38).auf(41, 40).end(); // Musik
+    /*5*/ mapping(5).zu(43, 42).auf(45, 44).end(); // Mina
+    /*6*/ mapping(6).zu(47, 46).auf(49, 48).end(); // Büro
+    /*7*/ mapping(7).zu(51, 50).auf(53, 52).end(); // Bad OG
 }
 
 void loop() {
@@ -210,3 +158,4 @@ void loop() {
 
     printInfos(now);
 }
+
