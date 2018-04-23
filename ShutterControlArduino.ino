@@ -9,37 +9,11 @@ int loopCnt = 0;
 
 void initEG();
 
-void debounce(Input *button, byte val) {
-    if (val == HIGH) {
-        if (button->inactiveConfidence <= config.inputStateConfidenceThreshold) {
-            button->inactiveConfidence++;
-        }
-        button->activeConfidence = 0;
-    } else {
-        if (button->activeConfidence <= config.inputStateConfidenceThreshold) {
-            button->activeConfidence++;
-        }
-        button->inactiveConfidence = 0;
-    }
-
-    button->isActive = button->activeConfidence > config.inputStateConfidenceThreshold;
-}
-
 void updateInputs(unsigned long now) {
     for (byte i = 0; i < NUM_INPUTS; i++) {
         Input *input = &config.inputs[i];
-        byte val = digitalRead(input->pin);
-        debounce(input, val);
-        if (!input->isActive) {
-            input->activatedAtMs = 0;
-        } else {
-            if (input->activatedAtMs == 0) {
-                input->activatedAtMs = now;
-                input->activeDurationMs = 0;
-            } else {
-                input->activeDurationMs = now - input->activatedAtMs;
-            }
-        }
+        byte val = digitalRead(input->getPin());
+        input->update(val, now);
     }
 }
 
@@ -118,25 +92,25 @@ void setup() {
 }
 
 void initEG() {
-    /*0*/ mapping(0).zu(23, 22).auf(25, 24).end(); // Bad EG
-    /*1*/ mapping(1).zu(27, 26).auf(29, 28).end(); // Schlafz. EG
-    /*2*/ mapping(2).zu(31, 30).auf(33, 32).end(); // WZ Tür EG
-    /*3*/ mapping(3).zu(35, 34).auf(37, 36).end(); // WZ Fenster EG
-    /*4*/ mapping(4).zu(39, 38).auf(41, 40).end(); // Küche Tür EG
-    /*5*/ mapping(5).zu(43, 42).auf(45, 44).end(); // Küche Fenster EG
-    /*6*/ mapping(6).zu(47, 46).auf(49, 48).end(); // Gäste WC EG
-    /*7*/ mapping(7).zu(51, 50).auf(53, 52).end(); // HWR EG
+    /*0*/ mapping(0).close(23, 22).open(25, 24).end(); // Bad EG
+    /*1*/ mapping(1).close(27, 26).open(29, 28).end(); // Schlafz. EG
+    /*2*/ mapping(2).close(31, 30).open(33, 32).end(); // WZ Tür EG
+    /*3*/ mapping(3).close(35, 34).open(37, 36).end(); // WZ Fenster EG
+    /*4*/ mapping(4).close(39, 38).open(41, 40).end(); // Küche Tür EG
+    /*5*/ mapping(5).close(43, 42).open(45, 44).end(); // Küche Fenster EG
+    /*6*/ mapping(6).close(47, 46).open(49, 48).end(); // Gäste WC EG
+    /*7*/ mapping(7).close(51, 50).open(53, 52).end(); // HWR EG
 }
 
 void initOG() {
-    /*0*/ mapping(0).zu(23, 22).auf(25, 24).end(); // Reserve OG
-    /*1*/ mapping(1).zu(27, 26).auf(29, 28).end(); // Flur OG
-    /*2*/ mapping(2).zu(31, 30).auf(33, 32).end(); // Finn
-    /*3*/ mapping(3).zu(35, 34).auf(37, 36).end(); // Lenn
-    /*4*/ mapping(4).zu(39, 38).auf(41, 40).end(); // Musik
-    /*5*/ mapping(5).zu(43, 42).auf(45, 44).end(); // Mina
-    /*6*/ mapping(6).zu(47, 46).auf(49, 48).end(); // Büro
-    /*7*/ mapping(7).zu(51, 50).auf(53, 52).end(); // Bad OG
+    /*0*/ mapping(0).close(23, 22).open(25, 24).end(); // Reserve OG
+    /*1*/ mapping(1).close(27, 26).open(29, 28).end(); // Flur OG
+    /*2*/ mapping(2).close(31, 30).open(33, 32).end(); // Finn
+    /*3*/ mapping(3).close(35, 34).open(37, 36).end(); // Lenn
+    /*4*/ mapping(4).close(39, 38).open(41, 40).end(); // Musik
+    /*5*/ mapping(5).close(43, 42).open(45, 44).end(); // Mina
+    /*6*/ mapping(6).close(47, 46).open(49, 48).end(); // Büro
+    /*7*/ mapping(7).close(51, 50).open(53, 52).end(); // Bad OG
 }
 
 void loop() {

@@ -12,18 +12,70 @@
 #define NUM_OUTPUTS 8
 #define NUM_MAPPINGS 16
 #define DEFAULT_INPT_STAT_CONF_THRS 100
-#define DEFAULT_OUT_PIN0 22
 #define DEFAULT_OUT_MAX_DURATION (1000UL * 5) // 5s
 #define DEFAULT_MAP_ACTIV_THRS 50 // 50ms
 
-typedef struct {
+class Input {
+
+private:
     boolean isActive = false;
+    unsigned long activationId = 0;
     unsigned long activatedAtMs = 0;
     unsigned long activeDurationMs = 0;
     byte activeConfidence = 0;
     byte inactiveConfidence = 0;
     byte pin;
-} Input, *pInput;
+
+    void debounce(byte val) {
+        if (val == HIGH) {
+            if (inactiveConfidence <= DEFAULT_INPT_STAT_CONF_THRS) {
+                inactiveConfidence++;
+            }
+            activeConfidence = 0;
+        } else {
+            if (activeConfidence <= DEFAULT_INPT_STAT_CONF_THRS) {
+                activeConfidence++;
+            }
+            inactiveConfidence = 0;
+        }
+
+        isActive = activeConfidence > DEFAULT_INPT_STAT_CONF_THRS;
+    }
+
+public:
+    boolean getIsActive() const {
+        return isActive;
+    }
+
+    void setPin(byte pin) {
+        this->pin = pin;
+    }
+
+    byte getPin() {
+        return this->pin;
+    }
+
+    void activate(unsigned long now) {
+        activatedAtMs = now;
+        isActive = true;
+    }
+
+
+    void update(byte val, unsigned long now) {
+        debounce(val);
+
+        if (!isActive) {
+            activatedAtMs = 0;
+        } else {
+            if (activatedAtMs == 0) {
+                activatedAtMs = now;
+                activeDurationMs = 0;
+            } else {
+                activeDurationMs = now - activatedAtMs;
+            }
+        }
+    }
+};
 
 enum OutputStatus {
     OFF, OUT1, OUT2
@@ -34,6 +86,8 @@ typedef struct {
     unsigned long activatedAtMs = 0;
     unsigned long activeDurationMs = 0;
     unsigned long maxActivationDurationMs;
+    unsigned long activationId1 = 0;
+    unsigned long activationId2 = 0;
     byte pin1;
     byte pin2;
 } Output, *pOutput;
@@ -53,12 +107,11 @@ struct {
     Input inputs[NUM_INPUTS];
     Output outputs[NUM_OUTPUTS];
     InputToOutputMapping mappings[NUM_MAPPINGS];
-    byte inputStateConfidenceThreshold = DEFAULT_INPT_STAT_CONF_THRS;
 } config;
 
-class MappingBuilder {
-    byte zuIn, zuOut;
-    byte aufIn, aufOut;
+class ShutterBuilder {
+    byte closeInputId, closeOutputId;
+    byte openInputId, openOutputId;
     byte mapNum;
 
     void addMapping(byte num, Input *input, Output *output, OutputStatus targetStatus) {
@@ -91,40 +144,41 @@ class MappingBuilder {
     }
 
     Input *addInput(byte num, byte pin) {
-        Input *button = &config.inputs[num];
-        button->pin = pin;
-        pinMode(button->pin, INPUT_PULLUP);
-        return button;
+        Input *input = &config.inputs[num];
+        input->setPin(pin);
+        pinMode(input->getPin(), INPUT_PULLUP);
+        return input;
     }
 
 public:
-    MappingBuilder(byte num) {
+    ShutterBuilder(byte num) {
         this->mapNum = num;
     }
 
-    MappingBuilder &zu(byte in, byte out) {
-        zuIn = in;
-        zuOut = out;
+    ShutterBuilder &close(byte in, byte out) {
+        closeInputId = in;
+        closeOutputId = out;
         return *this;
     }
 
-    MappingBuilder &auf(byte in, byte out) {
-        aufIn = in;
-        aufOut = out;
+    ShutterBuilder &open(byte in, byte out) {
+        openInputId = in;
+        openOutputId = out;
         return *this;
     }
 
     void end() {
-        Input *input1 = addInput(mapNum * 2, zuIn);
-        Input *input2 = addInput(mapNum * 2 + 1, aufIn);
-        Output *output = addOutput(mapNum, zuOut, aufOut);
+        Input *input1 = addInput(mapNum * 2, closeInputId);
+        Input *input2 = addInput(mapNum * 2 + 1, openInputId);
+        Output *output = addOutput(mapNum, closeOutputId, openOutputId);
 
         addMapping(mapNum, input1, output, OUT1);
         addMapping(mapNum + 1, input2, output, OUT2);
     }
 };
 
-MappingBuilder &mapping(byte i) {
-    return *(new MappingBuilder(i));
+ShutterBuilder &mapping(byte i) {
+    return *(new ShutterBuilder(i));
 }
+
 #endif //SHUTTERCONTROLARDUINO_SHUTTERCONTROLARDUINO_H
