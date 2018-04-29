@@ -20,13 +20,14 @@ class Input {
 private:
     boolean isActive = false;
     unsigned long activationId = 0;
+
+private:
     unsigned long activatedAtMs = 0;
-    unsigned long activeDurationMs = 0;
     byte activeConfidence = 0;
     byte inactiveConfidence = 0;
     byte pin;
 
-    void debounce(byte val) {
+    boolean debounce(byte val) {
         if (val == HIGH) {
             if (inactiveConfidence <= DEFAULT_INPT_STAT_CONF_THRS) {
                 inactiveConfidence++;
@@ -39,10 +40,14 @@ private:
             inactiveConfidence = 0;
         }
 
-        isActive = activeConfidence > DEFAULT_INPT_STAT_CONF_THRS;
+        return activeConfidence > DEFAULT_INPT_STAT_CONF_THRS;
     }
 
 public:
+    unsigned long getActivationId() const {
+        return activationId;
+    }
+
     boolean getIsActive() const {
         return isActive;
     }
@@ -51,28 +56,24 @@ public:
         this->pin = pin;
     }
 
-    byte getPin() {
+    byte getPin() const {
         return this->pin;
     }
 
-    void activate(unsigned long now) {
-        activatedAtMs = now;
-        isActive = true;
+    unsigned long getActiveDurationMs(unsigned long now) {
+        return isActive ? now - activatedAtMs : 0;
     }
 
-
     void update(byte val, unsigned long now) {
-        debounce(val);
+        boolean activate = debounce(val);
 
-        if (!isActive) {
+        if (!activate && isActive) {
             activatedAtMs = 0;
-        } else {
-            if (activatedAtMs == 0) {
-                activatedAtMs = now;
-                activeDurationMs = 0;
-            } else {
-                activeDurationMs = now - activatedAtMs;
-            }
+            isActive = false;
+            activationId++;
+        } else if (activate && !isActive) {
+            activatedAtMs = now;
+            isActive = true;
         }
     }
 };
@@ -85,12 +86,11 @@ typedef struct {
     OutputStatus status = OFF;
     unsigned long activatedAtMs = 0;
     unsigned long activeDurationMs = 0;
-    unsigned long maxActivationDurationMs;
-    unsigned long activationId1 = 0;
-    unsigned long activationId2 = 0;
+    unsigned long maxActivationDurationMs = DEFAULT_OUT_MAX_DURATION;
+    unsigned long activationId = 0;
     byte pin1;
     byte pin2;
-} Output, *pOutput;
+} Output;
 
 typedef struct {
     Input **inputs;
@@ -98,10 +98,11 @@ typedef struct {
     Output **outputs;
     byte numOutputs;
     OutputStatus statusToActivate;
+    boolean isActive = false;
     unsigned long activatedAtMs = 0;
     unsigned long activeDurationMs = 0;
-    unsigned long activationThresholdMs;
-} InputToOutputMapping, *pInputToOutputMapping;
+    unsigned long activationThresholdMs = DEFAULT_MAP_ACTIV_THRS;
+} InputToOutputMapping;
 
 struct {
     Input inputs[NUM_INPUTS];
@@ -130,7 +131,6 @@ class ShutterBuilder {
         mapping->numOutputs = 1;
 
         mapping->statusToActivate = targetStatus;
-        mapping->activationThresholdMs = DEFAULT_MAP_ACTIV_THRS;
     }
 
     Output *addOutput(byte num, byte o1, byte o2) {
@@ -139,7 +139,6 @@ class ShutterBuilder {
         output->pin2 = o2;
         pinMode(output->pin1, OUTPUT);
         pinMode(output->pin2, OUTPUT);
-        output->maxActivationDurationMs = DEFAULT_OUT_MAX_DURATION;
         return output;
     }
 

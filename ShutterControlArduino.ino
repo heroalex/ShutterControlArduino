@@ -22,44 +22,47 @@ void updateMappings(unsigned long now) {
         InputToOutputMapping *mapping = &config.mappings[i];
         Input **inputs = mapping->inputs;
         byte numInputs = mapping->numInputs;
-        boolean isActive = false;
         for (byte j = 0; j < numInputs; j++) {
             Input *input = inputs[j];
-            if (input->isActive && input->activeDurationMs > mapping->activationThresholdMs) {
-                isActive = true;
-                break;
-            }
-        }
-        if (isActive) {
-            if (mapping->activatedAtMs == 0) {
-                mapping->activatedAtMs = now;
-                mapping->activeDurationMs = 0;
-            } else {
-                mapping->activeDurationMs = now - mapping->activatedAtMs;
+            if (input->getIsActive() && input->getActiveDurationMs(now) > mapping->activationThresholdMs) {
                 Output **outputs = mapping->outputs;
                 byte numOutputs = mapping->numOutputs;
                 for (byte k = 0; k < numOutputs; k++) {
                     Output *output = outputs[k];
-                    output->status = mapping->statusToActivate;
+                    if ((output->activationId != input->getActivationId() || output->activationId == 0) &&
+                        output->status != mapping->statusToActivate) {
+                        output->status = mapping->statusToActivate;
+                        output->activationId = input->getActivationId();
+                        output->activatedAtMs = now;
+                    } else if (output->activationId == input->getActivationId() &&
+                               output->status == mapping->statusToActivate) {
+                        output->status = OutputStatus::OFF;
+                        output->activatedAtMs = 0;
+                    }
                 }
+                break;
             }
-        } else {
-            mapping->activatedAtMs = 0;
-            mapping->activeDurationMs = 0;
         }
     }
-
-    /*if( !config.mappings[8].inputs[0]->isActive ) {
-        config.mappings[0].outputs[0]->status = OFF;
-        } else if (config.mappings[0].outputs[0]->status == OFF) {
-        ledState = !ledState;
-        config.mappings[0].outputs[0]->status = OUT1;
-        digitalWrite(config.mappings[0].outputs[0]->pin1, ledState);
-    }*/
 }
 
 void updateOutputs(unsigned long now) {
-
+    for (byte i = 0; i < NUM_OUTPUTS; i++) {
+        Output *output = &config.outputs[i];
+        if ((now - output->activatedAtMs) > output->maxActivationDurationMs) {
+            output->status = OutputStatus::OFF;
+            digitalWrite(output->pin1, 0);
+            digitalWrite(output->pin2, 0);
+        } else if (output->status == OutputStatus::OUT1) {
+            digitalWrite(output->pin2, 0);
+            // TODO: wait
+            digitalWrite(output->pin1, 1);
+        } else if (output->status == OutputStatus::OUT2) {
+            digitalWrite(output->pin1, 0);
+            // TODO: wait
+            digitalWrite(output->pin2, 1);
+        }
+    }
 }
 
 void printInfos(unsigned long now) {
@@ -68,9 +71,9 @@ void printInfos(unsigned long now) {
         lcd.print(F("                "));
         lcd.setCursor(0, 1);
         Input *button = &config.inputs[1];
-        lcd.print(button->pin);
+        lcd.print(button->getPin());
         lcd.print(':');
-        lcd.print(button->activeDurationMs);
+        lcd.print(button->getActiveDurationMs(now));
         lcd.print(' ');
     }
 }
