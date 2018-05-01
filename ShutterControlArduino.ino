@@ -30,13 +30,23 @@ void updateMappings(unsigned long now) {
                 for (byte k = 0; k < numOutputs; k++) {
                     Output *output = outputs[k];
                     if ((output->activationId != input->getActivationId() || output->activationId == 0) &&
-                        output->status != mapping->statusToActivate) {
-                        output->status = mapping->statusToActivate;
+                        output->status != SWITCHING_TO_OUT1 && output->status != SWITCHING_TO_OUT2) {
+                        if (mapping->statusToActivate == OUT1) {
+                            output->status = SWITCHING_TO_OUT1;
+                        } else if (mapping->statusToActivate == OUT2) {
+                            output->status = SWITCHING_TO_OUT2;
+                        } else {
+                            morseError('M');
+                        }
                         output->activationId = input->getActivationId();
                         output->activatedAtMs = now;
-                    } else if (output->activationId == input->getActivationId() &&
+                    } else if (output->activationId != input->getActivationId() &&
+                               output->status != mapping->statusToActivate) {
+                        output->status = OFF;
+                        output->activatedAtMs = 0;
+                    } else if (output->activationId != input->getActivationId() &&
                                output->status == mapping->statusToActivate) {
-                        output->status = OutputStatus::OFF;
+                        output->status = OFF;
                         output->activatedAtMs = 0;
                     }
                 }
@@ -49,18 +59,30 @@ void updateMappings(unsigned long now) {
 void updateOutputs(unsigned long now) {
     for (byte i = 0; i < NUM_OUTPUTS; i++) {
         Output *output = &config.outputs[i];
-        if ((now - output->activatedAtMs) > output->maxActivationDurationMs) {
-            output->status = OutputStatus::OFF;
-            digitalWrite(output->pin1, 0);
-            digitalWrite(output->pin2, 0);
-        } else if (output->status == OutputStatus::OUT1) {
-            digitalWrite(output->pin2, 0);
-            // TODO: wait
-            digitalWrite(output->pin1, 1);
-        } else if (output->status == OutputStatus::OUT2) {
-            digitalWrite(output->pin1, 0);
-            // TODO: wait
-            digitalWrite(output->pin2, 1);
+        if (((now - output->activatedAtMs) > output->maxActivationDurationMs) || output->status == OFF) {
+            output->status = OFF;
+            digitalWrite(output->pin1, LOW);
+            digitalWrite(output->pin2, LOW);
+        } else if (output->status == OUT1) {
+            digitalWrite(output->pin2, LOW);
+            digitalWrite(output->pin1, HIGH);
+        } else if (output->status == OUT2) {
+            digitalWrite(output->pin1, LOW);
+            digitalWrite(output->pin2, HIGH);
+        } else if (output->status == SWITCHING_TO_OUT1) {
+            if ((now - output->activatedAtMs) > output->minSwitchingDurationMs) {
+                output->status = OUT1;
+            } else {
+                digitalWrite(output->pin1, LOW);
+                digitalWrite(output->pin2, LOW);
+            }
+        } else if (output->status == SWITCHING_TO_OUT2) {
+            if ((now - output->activatedAtMs) > output->minSwitchingDurationMs) {
+                output->status = OUT2;
+            } else {
+                digitalWrite(output->pin1, LOW);
+                digitalWrite(output->pin2, LOW);
+            }
         }
     }
 }
@@ -70,11 +92,18 @@ void printInfos(unsigned long now) {
         lcd.setCursor(0, 1);
         lcd.print(F("                "));
         lcd.setCursor(0, 1);
-        Input *button = &config.inputs[1];
-        lcd.print(button->getPin());
+        Input *input1 = config.mappings[0].inputs[0];
+        lcd.print(input1->getPin());
         lcd.print(':');
-        lcd.print(button->getActiveDurationMs(now));
+        lcd.print(input1->getActivationId());
         lcd.print(' ');
+        Input *input2 = config.mappings[1].inputs[0];
+        lcd.print(input2->getPin());
+        lcd.print(':');
+        lcd.print(input2->getActivationId());
+        Output *output = config.mappings[0].outputs[0];
+        lcd.print(' ');
+        lcd.print(output->status);
     }
 }
 
