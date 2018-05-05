@@ -185,7 +185,7 @@ void initEG() {
             if (mapping->statusToActivate == CLOSING) {
                 mappingCloseAll->outputs[idxClosingOutputs++] = output;
             } else if (mapping->statusToActivate == OPENING) {
-                mappingCloseAll->outputs[idxOpeningOutputs++] = output;
+                mappingOpenAll->outputs[idxOpeningOutputs++] = output;
             }
         }
     }
