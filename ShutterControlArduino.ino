@@ -9,6 +9,8 @@ int loopCnt = 0;
 
 void initEG();
 
+void initExtraMappings();
+
 void updateInputs(unsigned long now) {
     for (byte i = 0; i < NUM_INPUTS; i++) {
         Input *input = &config.inputs[i];
@@ -116,6 +118,10 @@ void initEG() {
     /*6*/ mapping(6).close(47, 46).open(49, 48).end(); // Gäste WC EG
     /*7*/ mapping(7).close(51, 50).open(53, 52).end(); // HWR EG
 
+    initExtraMappings();
+}
+
+void initExtraMappings() {
     /*8 ALL */
     byte numOpeningInputs = 0;
     byte numClosingInputs = 0;
@@ -200,6 +206,8 @@ void initOG() {
     /*5*/ mapping(5).close(43, 42).open(45, 44).end(); // Mina
     /*6*/ mapping(6).close(47, 46).open(49, 48).end(); // Büro
     /*7*/ mapping(7).close(51, 50).open(53, 52).end(); // Bad OG
+
+    initExtraMappings();
 }
 
 void loop() {
