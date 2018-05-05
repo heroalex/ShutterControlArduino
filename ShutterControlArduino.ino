@@ -115,6 +115,80 @@ void initEG() {
     /*5*/ mapping(5).close(43, 42).open(45, 44).end(); // Küche Fenster EG
     /*6*/ mapping(6).close(47, 46).open(49, 48).end(); // Gäste WC EG
     /*7*/ mapping(7).close(51, 50).open(53, 52).end(); // HWR EG
+
+    /*8 ALL */
+    byte numOpeningInputs = 0;
+    byte numClosingInputs = 0;
+    byte numOpeningOutputs = 0;
+    byte numClosingOutputs = 0;
+    byte idxOpeningInputs = 0;
+    byte idxClosingInputs = 0;
+    byte idxOpeningOutputs = 0;
+    byte idxClosingOutputs = 0;
+
+    // count numbers of closing and opening inputs and outputs
+    for (byte i = 0; i < NUM_MAPPINGS - 2; i++) {
+        InputToOutputMapping *mapping = &config.mappings[i];
+        byte numInputs = mapping->numInputs;
+        byte numOutputs = mapping->numOutputs;
+        if (mapping->statusToActivate == CLOSING) {
+            numClosingInputs += numInputs;
+            numClosingOutputs += numOutputs;
+        } else if (mapping->statusToActivate == OPENING) {
+            numOpeningInputs += numInputs;
+            numOpeningOutputs += numOutputs;
+        }
+    }
+
+    InputToOutputMapping *mappingCloseAll = &config.mappings[16];
+    InputToOutputMapping *mappingOpenAll = &config.mappings[17];
+
+    mappingCloseAll->inputs = static_cast<Input **>(malloc(numClosingInputs * sizeof(Input *)));
+    mappingOpenAll->inputs = static_cast<Input **>(malloc(numOpeningInputs * sizeof(Input *)));
+    if (mappingCloseAll->inputs == NULL || mappingOpenAll->inputs == NULL) {
+        morseError('I');
+    }
+
+    mappingCloseAll->outputs = static_cast<Output **>(malloc(numClosingOutputs * sizeof(Output *)));
+    mappingOpenAll->outputs = static_cast<Output **>(malloc(numOpeningOutputs * sizeof(Output *)));
+    if (mappingCloseAll->outputs == NULL || mappingOpenAll->outputs == NULL) {
+        morseError('O');
+    }
+
+    mappingCloseAll->numInputs = numClosingInputs;
+    mappingOpenAll->numInputs = numOpeningInputs;
+
+    mappingCloseAll->numOutputs = numClosingOutputs;
+    mappingOpenAll->numOutputs = numOpeningOutputs;
+
+    mappingCloseAll->statusToActivate = CLOSING;
+    mappingCloseAll->activationThresholdMs = (1000UL * 3); // 3s
+    mappingOpenAll->statusToActivate = OPENING;
+    mappingOpenAll->activationThresholdMs = (1000UL * 3); // 3s
+
+    for (byte i = 0; i < NUM_MAPPINGS - 2; i++) {
+        InputToOutputMapping *mapping = &config.mappings[i];
+        Input **inputs = mapping->inputs;
+        byte numInputs = mapping->numInputs;
+        for (byte j = 0; j < numInputs; j++) {
+            Input *input = inputs[j];
+            if (mapping->statusToActivate == CLOSING) {
+                mappingCloseAll->inputs[idxClosingInputs++] = input;
+            } else if (mapping->statusToActivate == OPENING) {
+                mappingOpenAll->inputs[idxOpeningInputs++] = input;
+            }
+        }
+        Output **outputs = mapping->outputs;
+        byte numOutputs = mapping->numOutputs;
+        for (byte k = 0; k < numOutputs; k++) {
+            Output *output = outputs[k];
+            if (mapping->statusToActivate == CLOSING) {
+                mappingCloseAll->outputs[idxClosingOutputs++] = output;
+            } else if (mapping->statusToActivate == OPENING) {
+                mappingCloseAll->outputs[idxOpeningOutputs++] = output;
+            }
+        }
+    }
 }
 
 void initOG() {

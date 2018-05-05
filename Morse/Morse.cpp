@@ -25,6 +25,11 @@ void morseError(char code) {
                 dit(1);
                 dit(7);
             }
+            case 'O': {
+                dah(1);
+                dah(1);
+                dah(7);
+            }
                 break;
             default: {
                 // SOS

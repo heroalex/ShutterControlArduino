@@ -10,7 +10,7 @@
 
 #define NUM_INPUTS 16
 #define NUM_OUTPUTS 8
-#define NUM_MAPPINGS 16
+#define NUM_MAPPINGS 18
 #define DEFAULT_INPT_STAT_CONF_THRS 100
 #define DEFAULT_OUT_MAX_DURATION (1000UL * 60) // 60s
 #define DEFAULT_OUT_MIN_STOPPING_DURATION 100 // 100ms
@@ -113,7 +113,8 @@ class ShutterBuilder {
     byte openInputId, openOutputId;
     byte mapNum;
 
-    void addMapping(byte num, Input *input, Output *output, OutputStatus targetStatus) {
+public:
+    void addMapping(byte num, Input *input, Output *output, OutputStatus targetStatus) const {
         InputToOutputMapping *mapping = &config.mappings[num];
         mapping->inputs = static_cast<Input **>(malloc(sizeof(Input *)));
         if (mapping->inputs == NULL) {
@@ -131,7 +132,7 @@ class ShutterBuilder {
         mapping->statusToActivate = targetStatus;
     }
 
-    Output *addOutput(byte num, byte closePin, byte openPin) {
+    Output *addOutput(byte num, byte closePin, byte openPin) const {
         Output *output = &config.outputs[num];
         output->closePin = closePin;
         output->openPin = openPin;
@@ -142,14 +143,13 @@ class ShutterBuilder {
         return output;
     }
 
-    Input *addInput(byte num, byte pin) {
+    Input *addInput(byte num, byte pin) const {
         Input *input = &config.inputs[num];
         input->setPin(pin);
         pinMode(input->getPin(), INPUT_PULLUP);
         return input;
     }
 
-public:
     ShutterBuilder(byte num) {
         this->mapNum = num;
     }
