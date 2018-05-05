@@ -12,8 +12,8 @@
 #define NUM_OUTPUTS 8
 #define NUM_MAPPINGS 16
 #define DEFAULT_INPT_STAT_CONF_THRS 100
-#define DEFAULT_OUT_MAX_DURATION (1000UL * 5) // 5s
-#define DEFAULT_OUT_MIN_SWITCHING_DURATION 1000UL // 50ms
+#define DEFAULT_OUT_MAX_DURATION (1000UL * 60) // 60s
+#define DEFAULT_OUT_MIN_STOPPING_DURATION 100 // 100ms
 #define DEFAULT_MAP_ACTIV_THRS 50 // 50ms
 
 class Input {
@@ -80,18 +80,17 @@ public:
 };
 
 enum OutputStatus {
-    OFF, OUT1, OUT2, SWITCHING_TO_OUT1, SWITCHING_TO_OUT2
+    IDLE, OPENING, CLOSING, STOPPING
 };
 
 typedef struct {
-    OutputStatus status = OFF;
+    OutputStatus status = IDLE;
     unsigned long activatedAtMs = 0;
     unsigned long activeDurationMs = 0;
     unsigned long maxActivationDurationMs = DEFAULT_OUT_MAX_DURATION;
-    unsigned long minSwitchingDurationMs = DEFAULT_OUT_MIN_SWITCHING_DURATION;
     unsigned long activationId = 0;
-    byte pin1;
-    byte pin2;
+    byte closePin;
+    byte openPin;
 } Output;
 
 typedef struct {
@@ -100,9 +99,6 @@ typedef struct {
     Output **outputs;
     byte numOutputs;
     OutputStatus statusToActivate;
-    boolean isActive = false;
-    unsigned long activatedAtMs = 0;
-    unsigned long activeDurationMs = 0;
     unsigned long activationThresholdMs = DEFAULT_MAP_ACTIV_THRS;
 } InputToOutputMapping;
 
@@ -135,14 +131,14 @@ class ShutterBuilder {
         mapping->statusToActivate = targetStatus;
     }
 
-    Output *addOutput(byte num, byte o1, byte o2) {
+    Output *addOutput(byte num, byte closePin, byte openPin) {
         Output *output = &config.outputs[num];
-        output->pin1 = o1;
-        output->pin2 = o2;
-        pinMode(output->pin1, OUTPUT);
-        pinMode(output->pin2, OUTPUT);
-        digitalWrite(output->pin1, LOW);
-        digitalWrite(output->pin2, LOW);
+        output->closePin = closePin;
+        output->openPin = openPin;
+        pinMode(output->closePin, OUTPUT);
+        pinMode(output->openPin, OUTPUT);
+        digitalWrite(output->closePin, LOW);
+        digitalWrite(output->openPin, LOW);
         return output;
     }
 
@@ -175,8 +171,8 @@ public:
         Input *input2 = addInput(mapNum * 2 + 1, openInputId);
         Output *output = addOutput(mapNum, closeOutputId, openOutputId);
 
-        addMapping(mapNum * 2, input1, output, OUT1);
-        addMapping(mapNum * 2 + 1, input2, output, OUT2);
+        addMapping(mapNum * 2, input1, output, OPENING);
+        addMapping(mapNum * 2 + 1, input2, output, CLOSING);
     }
 };
 

@@ -29,28 +29,16 @@ void updateMappings(unsigned long now) {
                 byte numOutputs = mapping->numOutputs;
                 for (byte k = 0; k < numOutputs; k++) {
                     Output *output = outputs[k];
-                    if ((output->activationId != input->getActivationId() || output->activationId == 0) &&
-                        output->status != SWITCHING_TO_OUT1 && output->status != SWITCHING_TO_OUT2) {
-                        if (mapping->statusToActivate == OUT1) {
-                            output->status = SWITCHING_TO_OUT1;
-                        } else if (mapping->statusToActivate == OUT2) {
-                            output->status = SWITCHING_TO_OUT2;
-                        } else {
-                            morseError('M');
-                        }
-                        output->activationId = input->getActivationId();
+                    if (output->status == IDLE) {
+                        output->status = mapping->statusToActivate;
                         output->activatedAtMs = now;
-                    } else if (output->activationId != input->getActivationId() &&
-                               output->status != mapping->statusToActivate) {
-                        output->status = OFF;
-                        output->activatedAtMs = 0;
-                    } else if (output->activationId != input->getActivationId() &&
-                               output->status == mapping->statusToActivate) {
-                        output->status = OFF;
-                        output->activatedAtMs = 0;
+                        output->activationId = input->getActivationId();
+                    } else if ((output->status == OPENING || output->status == CLOSING) &&
+                               output->activationId != input->getActivationId()) {
+                        output->status = STOPPING;
+                        output->activatedAtMs = now;
                     }
                 }
-                break;
             }
         }
     }
@@ -59,30 +47,25 @@ void updateMappings(unsigned long now) {
 void updateOutputs(unsigned long now) {
     for (byte i = 0; i < NUM_OUTPUTS; i++) {
         Output *output = &config.outputs[i];
-        if (((now - output->activatedAtMs) > output->maxActivationDurationMs) || output->status == OFF) {
-            output->status = OFF;
-            digitalWrite(output->pin1, LOW);
-            digitalWrite(output->pin2, LOW);
-        } else if (output->status == OUT1) {
-            digitalWrite(output->pin2, LOW);
-            digitalWrite(output->pin1, HIGH);
-        } else if (output->status == OUT2) {
-            digitalWrite(output->pin1, LOW);
-            digitalWrite(output->pin2, HIGH);
-        } else if (output->status == SWITCHING_TO_OUT1) {
-            if ((now - output->activatedAtMs) > output->minSwitchingDurationMs) {
-                output->status = OUT1;
-            } else {
-                digitalWrite(output->pin1, LOW);
-                digitalWrite(output->pin2, LOW);
+        if ((output->status == OPENING || output->status == CLOSING) &&
+            ((now - output->activatedAtMs) > output->maxActivationDurationMs)) {
+            output->status = STOPPING;
+            digitalWrite(output->closePin, LOW);
+            digitalWrite(output->openPin, LOW);
+        } else if (output->status == OPENING) {
+            digitalWrite(output->openPin, LOW);
+            digitalWrite(output->closePin, HIGH);
+        } else if (output->status == CLOSING) {
+            digitalWrite(output->closePin, LOW);
+            digitalWrite(output->openPin, HIGH);
+        } else if (output->status == STOPPING) {
+            if ((now - output->activatedAtMs) > DEFAULT_OUT_MIN_STOPPING_DURATION) {
+                output->status = IDLE;
+                output->activatedAtMs = 0;
+                output->activationId = 0;
             }
-        } else if (output->status == SWITCHING_TO_OUT2) {
-            if ((now - output->activatedAtMs) > output->minSwitchingDurationMs) {
-                output->status = OUT2;
-            } else {
-                digitalWrite(output->pin1, LOW);
-                digitalWrite(output->pin2, LOW);
-            }
+            digitalWrite(output->closePin, LOW);
+            digitalWrite(output->openPin, LOW);
         }
     }
 }
