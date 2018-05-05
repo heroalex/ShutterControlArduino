@@ -3,7 +3,9 @@
 #include "ShutterControlArduino.h"
 #include "Morse/Morse.h"
 
+#ifdef USE_LCD
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
+#endif
 
 int loopCnt = 0;
 
@@ -72,6 +74,7 @@ void updateOutputs(unsigned long now) {
     }
 }
 
+#ifdef USE_LCD
 void printInfos(unsigned long now) {
     if (now % 100UL == 0) {
         lcd.setCursor(0, 1);
@@ -91,6 +94,7 @@ void printInfos(unsigned long now) {
         lcd.print(output->status);
     }
 }
+#endif
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
@@ -103,9 +107,11 @@ void setup() {
 #error "set floor"
 #endif
 
+#ifdef USE_LCD
     lcd.begin(16, 2);
     lcd.print(NUM_INPUTS);
     lcd.print(F(" Buttons"));
+#endif
 }
 
 void initEG() {
@@ -213,6 +219,7 @@ void initOG() {
 void loop() {
     unsigned long now = millis();
     loopCnt++;
+#ifdef USE_LCD
     if (now % 1000UL == 0) {
         lcd.setCursor(10, 0);
         lcd.print(F("     "));
@@ -220,13 +227,15 @@ void loop() {
         lcd.print(loopCnt);
         loopCnt = 0;
     }
+#endif
 
     updateInputs(now);
 
     updateMappings(now);
 
     updateOutputs(now);
-
+#ifdef USE_LCD
     printInfos(now);
+#endif
 }
 
