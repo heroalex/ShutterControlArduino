@@ -6,35 +6,40 @@
 #define SHUTTERCONTROLARDUINO_SHUTTERCONTROLARDUINO_H
 
 #include <Arduino.h>
+#include <limits.h>
 #include "Morse.h"
 
 #define NUM_INPUTS 16
 #define NUM_OUTPUTS 8
-#define NUM_MAPPINGS 16 //18
-#define DEFAULT_INPT_STAT_CONF_THRS 250
-#define DEFAULT_INPT_INACT_CONF_THRS 10
-#define DEFAULT_OUT_MAX_DURATION (1000UL * 60) // 60s
-#define DEFAULT_OUT_MIN_STOPPING_DURATION 100 // 100ms
-#define DEFAULT_MAP_ACTIV_THRS 200 // 200ms
+#define NUM_MAPPINGS 18
+#define DEFAULT_INPT_STAT_CONF_THRS 1000
+#define DEFAULT_INPT_INACT_CONF_THRS 15
+#define DEFAULT_OUT_MAX_DURATION (1000UL * 5) // 60s
+#define DEFAULT_OUT_MIN_STOPPING_DURATION 500 // 100ms
+#define DEFAULT_MAP_ACTIV_THRS 100 // 200ms
 #define OUTPUT_ON LOW
 #define OUTPUT_OFF HIGH
+#define INPUT_OFF LOW
 
-//#define USE_LCD
+//#define USE_LCD1
+//#define USE_LCD2
+#define USE_LCD3
+//#define FLOOR_OG
 
 class Input {
 
 private:
     boolean isActive = false;
-    unsigned long activationId = 0;
+    unsigned long activationId = ULONG_MAX;
 
 private:
-    unsigned long activatedAtMs = 0;
-    byte activeConfidence = 0;
-    byte inactiveConfidence = 0;
+    unsigned long activatedAtMs = ULONG_MAX;
+    int activeConfidence = 0;
+    int inactiveConfidence = 0;
     byte pin;
 
     boolean debounce(byte val) {
-        if (val == LOW) {
+        if (val == INPUT_OFF) {
             if (inactiveConfidence <= DEFAULT_INPT_INACT_CONF_THRS) {
                 inactiveConfidence++;
             } else {
@@ -56,14 +61,6 @@ public:
         return activationId;
     }
     
-    byte getActiveConf() {
-      return activeConfidence;
-    }
-    
-    byte getInactiveConf() {
-      return inactiveConfidence;
-    }
-
     boolean getIsActive() const {
         return isActive;
     }
@@ -84,9 +81,9 @@ public:
         boolean activate = debounce(val);
 
         if (!activate && isActive) {
-            activatedAtMs = 0;
+            activatedAtMs = ULONG_MAX;
             isActive = false;
-            activationId++;
+            activationId = now;
         } else if (activate && !isActive) {
             activatedAtMs = now;
             isActive = true;
@@ -100,7 +97,7 @@ enum OutputStatus {
 
 typedef struct {
     OutputStatus status = IDLE;
-    unsigned long activatedAtMs = 0;
+    unsigned long activatedAtMs = ULONG_MAX;
     unsigned long activeDurationMs = 0;
     unsigned long maxActivationDurationMs = DEFAULT_OUT_MAX_DURATION;
     unsigned long activationId = 0;
@@ -124,8 +121,8 @@ struct {
 } config;
 
 class ShutterBuilder {
-    byte closeInputId, closeOutputId;
-    byte openInputId, openOutputId;
+    byte closeInputPin{}, closeOutputPin{};
+    byte openInputPin{}, openOutputPin{};
     byte mapNum;
 
 public:
@@ -161,30 +158,30 @@ public:
     Input *addInput(byte num, byte pin) const {
         Input *input = &config.inputs[num];
         input->setPin(pin);
-        pinMode(input->getPin(), INPUT);
+        pinMode(input->getPin(), (INPUT_OFF == HIGH) ? INPUT_PULLUP : INPUT);
         return input;
     }
 
-    ShutterBuilder(byte num) {
+    explicit ShutterBuilder(byte num) {
         this->mapNum = num;
     }
 
     ShutterBuilder &close(byte in, byte out) {
-        closeInputId = in;
-        closeOutputId = out;
+        closeInputPin = in;
+        closeOutputPin = out;
         return *this;
     }
 
     ShutterBuilder &open(byte in, byte out) {
-        openInputId = in;
-        openOutputId = out;
+        openInputPin = in;
+        openOutputPin = out;
         return *this;
     }
 
     void end() {
-        Input *input1 = addInput(mapNum * 2, closeInputId);
-        Input *input2 = addInput(mapNum * 2 + 1, openInputId);
-        Output *output = addOutput(mapNum, closeOutputId, openOutputId);
+        Input *input1 = addInput(mapNum * 2, closeInputPin);
+        Input *input2 = addInput(mapNum * 2 + 1, openInputPin);
+        Output *output = addOutput(mapNum, closeOutputPin, openOutputPin);
 
         addMapping(mapNum * 2, input1, output, OPENING);
         addMapping(mapNum * 2 + 1, input2, output, CLOSING);
