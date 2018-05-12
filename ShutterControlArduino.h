@@ -10,11 +10,16 @@
 
 #define NUM_INPUTS 16
 #define NUM_OUTPUTS 8
-#define NUM_MAPPINGS 18
-#define DEFAULT_INPT_STAT_CONF_THRS 100
+#define NUM_MAPPINGS 16 //18
+#define DEFAULT_INPT_STAT_CONF_THRS 250
+#define DEFAULT_INPT_INACT_CONF_THRS 10
 #define DEFAULT_OUT_MAX_DURATION (1000UL * 60) // 60s
 #define DEFAULT_OUT_MIN_STOPPING_DURATION 100 // 100ms
-#define DEFAULT_MAP_ACTIV_THRS 50 // 50ms
+#define DEFAULT_MAP_ACTIV_THRS 200 // 200ms
+#define OUTPUT_ON LOW
+#define OUTPUT_OFF HIGH
+
+//#define USE_LCD
 
 class Input {
 
@@ -29,24 +34,34 @@ private:
     byte pin;
 
     boolean debounce(byte val) {
-        if (val == HIGH) {
-            if (inactiveConfidence <= DEFAULT_INPT_STAT_CONF_THRS) {
+        if (val == LOW) {
+            if (inactiveConfidence <= DEFAULT_INPT_INACT_CONF_THRS) {
                 inactiveConfidence++;
+            } else {
+              activeConfidence = 0;
             }
-            activeConfidence = 0;
         } else {
             if (activeConfidence <= DEFAULT_INPT_STAT_CONF_THRS) {
                 activeConfidence++;
+            } else {
+              inactiveConfidence = 0;
             }
-            inactiveConfidence = 0;
         }
 
-        return activeConfidence > DEFAULT_INPT_STAT_CONF_THRS;
+        return activeConfidence >= DEFAULT_INPT_STAT_CONF_THRS;
     }
 
 public:
     unsigned long getActivationId() const {
         return activationId;
+    }
+    
+    byte getActiveConf() {
+      return activeConfidence;
+    }
+    
+    byte getInactiveConf() {
+      return inactiveConfidence;
     }
 
     boolean getIsActive() const {
@@ -138,15 +153,15 @@ public:
         output->openPin = openPin;
         pinMode(output->closePin, OUTPUT);
         pinMode(output->openPin, OUTPUT);
-        digitalWrite(output->closePin, LOW);
-        digitalWrite(output->openPin, LOW);
+        digitalWrite(output->closePin, OUTPUT_OFF);
+        digitalWrite(output->openPin, OUTPUT_OFF);
         return output;
     }
 
     Input *addInput(byte num, byte pin) const {
         Input *input = &config.inputs[num];
         input->setPin(pin);
-        pinMode(input->getPin(), INPUT_PULLUP);
+        pinMode(input->getPin(), INPUT);
         return input;
     }
 

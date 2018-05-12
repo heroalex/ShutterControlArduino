@@ -5,19 +5,30 @@
 
 #ifdef USE_LCD
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
-#endif
 
 int loopCnt = 0;
+#endif
 
 void initEG();
+void initOG();
 
 void initExtraMappings();
 
 void updateInputs(unsigned long now) {
+    boolean anyActive = false;
     for (byte i = 0; i < NUM_INPUTS; i++) {
         Input *input = &config.inputs[i];
         byte val = digitalRead(input->getPin());
         input->update(val, now);
+        if(input->getIsActive() == true) {
+          anyActive = true;
+        }
+    }
+    
+    if(anyActive) {
+      digitalWrite(LED_BUILTIN, HIGH);
+    } else {
+      digitalWrite(LED_BUILTIN, LOW);
     }
 }
 
@@ -54,22 +65,22 @@ void updateOutputs(unsigned long now) {
         if ((output->status == OPENING || output->status == CLOSING) &&
             ((now - output->activatedAtMs) > output->maxActivationDurationMs)) {
             output->status = STOPPING;
-            digitalWrite(output->closePin, LOW);
-            digitalWrite(output->openPin, LOW);
+            digitalWrite(output->closePin, OUTPUT_OFF);
+            digitalWrite(output->openPin, OUTPUT_OFF);
         } else if (output->status == OPENING) {
-            digitalWrite(output->openPin, LOW);
-            digitalWrite(output->closePin, HIGH);
+            digitalWrite(output->openPin, OUTPUT_OFF);
+            digitalWrite(output->closePin, OUTPUT_ON);
         } else if (output->status == CLOSING) {
-            digitalWrite(output->closePin, LOW);
-            digitalWrite(output->openPin, HIGH);
+            digitalWrite(output->closePin, OUTPUT_OFF);
+            digitalWrite(output->openPin, OUTPUT_ON);
         } else if (output->status == STOPPING) {
             if ((now - output->activatedAtMs) > DEFAULT_OUT_MIN_STOPPING_DURATION) {
                 output->status = IDLE;
                 output->activatedAtMs = 0;
                 output->activationId = 0;
             }
-            digitalWrite(output->closePin, LOW);
-            digitalWrite(output->openPin, LOW);
+            digitalWrite(output->closePin, OUTPUT_OFF);
+            digitalWrite(output->openPin, OUTPUT_OFF);
         }
     }
 }
@@ -77,20 +88,28 @@ void updateOutputs(unsigned long now) {
 #ifdef USE_LCD
 void printInfos(unsigned long now) {
     if (now % 100UL == 0) {
-        lcd.setCursor(0, 1);
+        lcd.setCursor(0, 0);
         lcd.print(F("                "));
-        lcd.setCursor(0, 1);
+        lcd.setCursor(0, 0);
         Input *input1 = config.mappings[0].inputs[0];
         lcd.print(input1->getPin());
         lcd.print(':');
         lcd.print(input1->getActivationId());
         lcd.print(' ');
+        lcd.print(input1->getActiveConf());
+        lcd.setCursor(0, 1);
+        lcd.print(F("                "));
+        lcd.setCursor(0, 1);
         Input *input2 = config.mappings[1].inputs[0];
         lcd.print(input2->getPin());
         lcd.print(':');
         lcd.print(input2->getActivationId());
+        lcd.print(' ');
+        lcd.print(input2->getActiveConf());
+        
         Output *output = config.mappings[0].outputs[0];
         lcd.print(' ');
+        lcd.print('O');
         lcd.print(output->status);
     }
 }
@@ -109,8 +128,6 @@ void setup() {
 
 #ifdef USE_LCD
     lcd.begin(16, 2);
-    lcd.print(NUM_INPUTS);
-    lcd.print(F(" Buttons"));
 #endif
 }
 
@@ -124,7 +141,7 @@ void initEG() {
     /*6*/ mapping(6).close(47, 46).open(49, 48).end(); // Gäste WC EG
     /*7*/ mapping(7).close(51, 50).open(53, 52).end(); // HWR EG
 
-    initExtraMappings();
+    //initExtraMappings();
 }
 
 void initExtraMappings() {
@@ -213,17 +230,16 @@ void initOG() {
     /*6*/ mapping(6).close(47, 46).open(49, 48).end(); // Büro
     /*7*/ mapping(7).close(51, 50).open(53, 52).end(); // Bad OG
 
-    initExtraMappings();
+    //initExtraMappings();
 }
 
 void loop() {
     unsigned long now = millis();
+#if 0 //def USE_LCD
     loopCnt++;
-#ifdef USE_LCD
     if (now % 1000UL == 0) {
-        lcd.setCursor(10, 0);
+        lcd.setCursor(0, 0);
         lcd.print(F("     "));
-        lcd.setCursor(11, 0);
         lcd.print(loopCnt);
         loopCnt = 0;
     }
