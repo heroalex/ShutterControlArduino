@@ -2,7 +2,7 @@
 // Created by al on 17.03.2018.
 //
 
-#include "Morse.h"
+#include <Morse.h>
 
 void dit(byte d) {
     digitalWrite(LED_BUILTIN, HIGH);
