@@ -357,14 +357,14 @@ void handleGetParams() {
 
 #ifdef FLOOR_OG
 void initOG() {
-    /*0*/ mapping(0).closeIn(23).openIn(25).powerOut(22).dirOut(24).end(); // Reserve OG
-    /*1*/ mapping(1).closeIn(29).openIn(27).powerOut(26).dirOut(28).end(); // Flur OG
-    /*2*/ mapping(2).closeIn(31).openIn(33).powerOut(30).dirOut(32).end(); // Finn
-    /*3*/ mapping(3).closeIn(35).openIn(37).powerOut(34).dirOut(36).end(); // Lenn
-    /*4*/ mapping(4).closeIn(39).openIn(41).powerOut(38).dirOut(40).end(); // Musik
-    /*5*/ mapping(5).closeIn(45).openIn(43).powerOut(42).dirOut(44).end(); // Mina
-    /*6*/ mapping(6).closeIn(47).openIn(49).powerOut(46).dirOut(48).end(); // Büro
-    /*7*/ mapping(7).closeIn(51).openIn(53).powerOut(50).dirOut(52).end(); // Bad OG
+    /*0*/ mapping(0).closeIn(23).openIn(25).powerOut(24).dirOut(22).end(); // Reserve OG
+    /*1*/ mapping(1).closeIn(29).openIn(27).powerOut(28).dirOut(26).end(); // Flur OG
+    /*2*/ mapping(2).closeIn(31).openIn(33).powerOut(32).dirOut(30).end(); // Finn
+    /*3*/ mapping(3).closeIn(35).openIn(37).powerOut(36).dirOut(34).end(); // Lenn
+    /*4*/ mapping(4).closeIn(39).openIn(41).powerOut(40).dirOut(38).end(); // Musik
+    /*5*/ mapping(5).closeIn(45).openIn(43).powerOut(44).dirOut(42).end(); // Mina
+    /*6*/ mapping(6).closeIn(47).openIn(49).powerOut(48).dirOut(46).end(); // Büro
+    /*7*/ mapping(7).closeIn(51).openIn(53).powerOut(52).dirOut(50).end(); // Bad OG
 }
 #else
 void initEG() {
