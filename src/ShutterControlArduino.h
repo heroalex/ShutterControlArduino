@@ -20,8 +20,8 @@
 struct {
     uint16_t inputActivationThreshold = 10; // confidence count for activation, time for reaching this limit is ~ INPUTS_CHECK_MSEC * this
     uint16_t inputDeactivationThreshold = 2; // confidence count for deactivation
-    uint16_t outputPowerMaxDuration = (1000UL * 60); // 60s
-    uint16_t outputDirectionSwitchingMinDuration = 1500; // 1500ms
+    uint16_t outputPowerMaxDuration = (1000UL * 30); // 30s
+    uint16_t outputDirectionSwitchingMinDuration = 500; // 500ms
 } config;
 
 class Input {
