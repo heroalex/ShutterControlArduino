@@ -1,7 +1,9 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <Wire.h>
+#if defined(USE_LCD)
 #include <LiquidCrystal.h>
+#endif
 #include <ShutterControlArduino.h>
 #include <Ticker.h>
 
