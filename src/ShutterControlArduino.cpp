@@ -358,24 +358,24 @@ void handleGetParams() {
 #ifdef FLOOR_OG
 void initOG() {
     /*0*/ mapping(0).closeIn(23).openIn(25).powerOut(22).dirOut(24).end(); // Reserve OG
-    /*1*/ mapping(1).closeIn(27).openIn(29).powerOut(26).dirOut(28).end(); // Flur OG
+    /*1*/ mapping(1).closeIn(29).openIn(27).powerOut(26).dirOut(28).end(); // Flur OG
     /*2*/ mapping(2).closeIn(31).openIn(33).powerOut(30).dirOut(32).end(); // Finn
     /*3*/ mapping(3).closeIn(35).openIn(37).powerOut(34).dirOut(36).end(); // Lenn
     /*4*/ mapping(4).closeIn(39).openIn(41).powerOut(38).dirOut(40).end(); // Musik
-    /*5*/ mapping(5).closeIn(43).openIn(45).powerOut(42).dirOut(44).end(); // Mina
+    /*5*/ mapping(5).closeIn(45).openIn(43).powerOut(42).dirOut(44).end(); // Mina
     /*6*/ mapping(6).closeIn(47).openIn(49).powerOut(46).dirOut(48).end(); // Büro
     /*7*/ mapping(7).closeIn(51).openIn(53).powerOut(50).dirOut(52).end(); // Bad OG
 }
 #else
 void initEG() {
-    /*0*/ mapping(0).closeIn(23).openIn(25).powerOut(22).dirOut(24).end(); // Bad EG
-    /*1*/ mapping(1).closeIn(27).openIn(29).powerOut(26).dirOut(28).end(); // Schlafz. EG
-    /*2*/ mapping(2).closeIn(31).openIn(33).powerOut(30).dirOut(32).end(); // WZ Tür EG
-    /*3*/ mapping(3).closeIn(35).openIn(37).powerOut(34).dirOut(36).end(); // WZ Fenster EG
-    /*4*/ mapping(4).closeIn(39).openIn(41).powerOut(38).dirOut(40).end(); // Küche Tür EG
-    /*5*/ mapping(5).closeIn(43).openIn(45).powerOut(42).dirOut(44).end(); // Küche Fenster EG
-    /*6*/ mapping(6).closeIn(47).openIn(49).powerOut(46).dirOut(48).end(); // Gäste WC EG
-    /*7*/ mapping(7).closeIn(51).openIn(53).powerOut(50).dirOut(52).end(); // HWR EG
+    /*0*/ mapping(0).closeIn(25).openIn(23).powerOut(24).dirOut(22).end(); // Bad EG
+    /*1*/ mapping(1).closeIn(27).openIn(29).powerOut(28).dirOut(26).end(); // Schlafz. EG
+    /*2*/ mapping(2).closeIn(33).openIn(31).powerOut(32).dirOut(30).end(); // WZ Tür EG
+    /*3*/ mapping(3).closeIn(35).openIn(37).powerOut(36).dirOut(34).end(); // WZ Fenster EG
+    /*4*/ mapping(4).closeIn(41).openIn(39).powerOut(40).dirOut(38).end(); // Küche Tür EG
+    /*5*/ mapping(5).closeIn(43).openIn(45).powerOut(44).dirOut(42).end(); // Küche Fenster EG
+    /*6*/ mapping(6).closeIn(49).openIn(47).powerOut(48).dirOut(46).end(); // Gäste WC EG
+    /*7*/ mapping(7).closeIn(53).openIn(51).powerOut(52).dirOut(50).end(); // HWR EG
 }
 #endif
 
